@@ -1,12 +1,13 @@
 /* jshint browser: true, esnext: true */
 
+let keys = {'A': false, 'D': false};
+
 const SNAKE_PART_RADIUS = 10;
 class Snake {
   constructor() {
     this.angle = 0;
     this.missingParts = 0;
     this.parts = [];
-    this.target = null;
 
     const headX = random(width);
     const headY = random(height);
@@ -14,44 +15,6 @@ class Snake {
        this.parts.push(createVector(headX, headY + SNAKE_PART_RADIUS * 2 * i));
     }
   }
-
-  isValidAngle(a) {
-    let v = p5.Vector.fromAngle(a);
-    v.setMag(SNAKE_PART_RADIUS * 2);
-
-    const newHead = p5.Vector.add(this.parts[0], v);
-
-    for (let part of this.parts) {
-      if (newHead.dist(part) < SNAKE_PART_RADIUS * 2) return false;
-    }
-
-    return true;
-  }
-
-  seekNewTarget() {
-    // TODO: Switch to something like Dijkstra or A* for pathfinding.
-    // The current solution sometimes leaves snakes stuck.
-
-    const head = this.parts[0];
-    let bestFood = null;
-    let bestDistance = Infinity;
-
-    for (let food of foods) {
-      if (food.hunter !== null) continue;
-      const d = head.dist(food.pos);
-      const a = p5.Vector.sub(food.pos, head).heading();
-      if (d < bestDistance && this.isValidAngle(a)) {
-        bestFood = food;
-        bestDistance = d;
-      }
-    }
-
-    if (bestFood !== null) {
-      this.target = bestFood;
-      bestFood.hunter = this;
-    }
-  }
-
   eatFood() {
     for (let food of foods) {
       if (p5.Vector.dist(this.parts[0], food.pos) < SNAKE_PART_RADIUS + FOOD_RADIUS) {
@@ -65,18 +28,14 @@ class Snake {
 
   move() {
     // TODO: Figure out how to make snakes slower.
-    if (this.target !== null) {
-      this.angle = p5.Vector.sub(this.target.pos, this.parts[0]).heading();
-
-      let v = p5.Vector.fromAngle(this.angle);
-      v.setMag(SNAKE_PART_RADIUS * 2);
-      if (this.missingParts === 0) {
-        this.parts.pop();
-      } else {
-        this.missingParts -= 1;
-      }
-      this.parts.unshift(p5.Vector.add(this.parts[0], v));
+    let v = p5.Vector.fromAngle(this.angle);
+    v.setMag(SNAKE_PART_RADIUS * 2);
+    if (this.missingParts === 0) {
+      this.parts.pop();
+    } else {
+      this.missingParts -= 1;
     }
+    this.parts.unshift(p5.Vector.add(this.parts[0], v));
   }
 
   isColliding() {
@@ -94,8 +53,11 @@ class Snake {
   }
 
   update() {
-    if (this.target === null) {
-      this.seekNewTarget();
+    if (keys['A']) {
+      this.angle -= PI / 10;
+    }
+    if (keys['D']) {
+      this.angle += PI / 10;
     }
 
     this.eatFood();
@@ -123,7 +85,6 @@ const FOOD_RADIUS = 10;
 class Food {
   constructor() {
     this.placeRandomly();
-    this.hunter = null;
   }
 
   placeRandomly() {
@@ -132,9 +93,6 @@ class Food {
 
   gotEaten() {
     this.placeRandomly();
-    // Works when food is stolen.
-    if (this.hunter !== null && this.hunter.target === this) this.hunter.target = null;
-    this.hunter = null;
   }
 
   draw() {
@@ -150,12 +108,13 @@ function setup() {
   snakes = [];
   foods = [];
 
-  for (let i = 0; i < 5; ++i) snakes.push(new Snake());
+  for (let i = 0; i < 1; ++i) snakes.push(new Snake());
   for (let i = 0; i < 10; ++i) foods.push(new Food());
 }
 
 function draw() {
   background(0);
+  frameRate(10);
 
   for (let food of foods) {
     food.draw();
@@ -170,5 +129,19 @@ function draw() {
     if (snake.isColliding()) {
       snakes.splice(i, 1);
     }
+  }
+}
+
+function keyPressed(event) {
+  const key = event.key.toUpperCase();
+  if (keys.hasOwnProperty(key)) {
+    keys[key] = true;
+  }
+}
+
+function keyReleased(event) {
+  const key = event.key.toUpperCase();
+  if (keys.hasOwnProperty(key)) {
+    keys[key] = false;
   }
 }
