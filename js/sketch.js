@@ -8,12 +8,12 @@ const INITIAL_SNAKE_PARTS = 10;
 
 class Snake {
   constructor() {
-    this.angle = random(-PI / 2, PI / 2);
+    this.angle = random(-PI / 8, PI / 8);
     this.missingParts = 0;
     this.parts = [];
 
     let headX, headY;
-    headX = random(width - SNAKE_PART_RADIUS);
+    headX = random(width / 2);
     headY = random(height - INITIAL_SNAKE_PARTS * SNAKE_PART_RADIUS * 2);
 
     for (let i = 0; i < INITIAL_SNAKE_PARTS; ++i) {
