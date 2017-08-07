@@ -1,6 +1,7 @@
 /* jshint browser: true, esnext: true */
 
 let keys = {'A': false, 'D': false};
+let gameOver = false;
 
 const SNAKE_PART_RADIUS = 10;
 class Snake {
@@ -79,7 +80,7 @@ class Snake {
     pop();
   }
 }
-let snakes;
+let snake;
 
 const FOOD_RADIUS = 10;
 class Food {
@@ -105,30 +106,30 @@ let foods;
 
 function setup() {
   createCanvas(600, 400);
-  snakes = [];
+  frameRate(10);
+  snake = new Snake();
   foods = [];
 
-  for (let i = 0; i < 1; ++i) snakes.push(new Snake());
   for (let i = 0; i < 10; ++i) foods.push(new Food());
 }
 
 function draw() {
   background(0);
-  frameRate(10);
+
+  fill(255);
+  noStroke();
+  textSize(20);
+  text("Score: " + snake.parts.length, 20);
 
   for (let food of foods) {
     food.draw();
   }
 
-  for (let i = snakes.length - 1; i >= 0; --i) {
-    const snake = snakes[i];
+  if (!gameOver) snake.update();
+  snake.draw();
 
-    snake.update();
-    snake.draw();
-
-    if (snake.isColliding()) {
-      snakes.splice(i, 1);
-    }
+  if (snake.isColliding()) {
+    gameOver = true;
   }
 }
 
