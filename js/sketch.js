@@ -117,9 +117,9 @@ function draw() {
   background(0);
 
   fill(255);
-  noStroke();
+  stroke(255);
   textSize(20);
-  text("Score: " + snake.parts.length, 20);
+  text("Score: " + snake.parts.length, 0, 20);
 
   for (let food of foods) {
     food.draw();
