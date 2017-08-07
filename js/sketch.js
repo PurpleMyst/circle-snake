@@ -5,6 +5,7 @@ let gameOver = false;
 
 const SNAKE_PART_RADIUS = 10;
 const INITIAL_SNAKE_PARTS = 10;
+const FOODS = 1;
 
 class Snake {
   constructor() {
@@ -115,7 +116,7 @@ function setup() {
   snake = new Snake();
   foods = [];
 
-  for (let i = 0; i < 10; ++i) foods.push(new Food());
+  for (let i = 0; i < FOODS; ++i) foods.push(new Food());
 }
 
 function draw() {
