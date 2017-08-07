@@ -1,28 +1,106 @@
 /* jshint browser: true, esnext: true */
 
-const SNAKE_PART_RADIUS = 15;
+const SNAKE_PART_RADIUS = 10;
 class Snake {
   constructor() {
-    this.parts = [];
-    for (let i = 0; i < 10; ++i) {
-       this.parts.push(createVector(width / 2, height / 2 + SNAKE_PART_RADIUS * i));
-    }
     this.angle = 0;
     this.missingParts = 0;
+    this.parts = [];
+    this.target = null;
+
+    const headX = random(width);
+    const headY = random(height);
+    for (let i = 0; i < 10; ++i) {
+       this.parts.push(createVector(headX, headY + SNAKE_PART_RADIUS * 2 * i));
+    }
+  }
+
+  isValidAngle(a) {
+    let v = p5.Vector.fromAngle(a);
+    v.setMag(SNAKE_PART_RADIUS * 2);
+
+    const newHead = p5.Vector.add(this.parts[0], v);
+
+    for (let part of this.parts) {
+      if (newHead.dist(part) < SNAKE_PART_RADIUS * 2) return false;
+    }
+
+    return true;
+  }
+
+  seekNewTarget() {
+    // TODO: Switch to something like Dijkstra or A* for pathfinding.
+    // The current solution sometimes leaves snakes stuck.
+
+    const head = this.parts[0];
+    let bestFood = null;
+    let bestDistance = Infinity;
+
+    for (let food of foods) {
+      if (food.hunter !== null) continue;
+      const d = head.dist(food.pos);
+      const a = p5.Vector.sub(food.pos, head).heading();
+      if (d < bestDistance && this.isValidAngle(a)) {
+        bestFood = food;
+        bestDistance = d;
+      }
+    }
+
+    if (bestFood !== null) {
+      this.target = bestFood;
+      bestFood.hunter = this;
+    }
+  }
+
+  eatFood() {
+    for (let food of foods) {
+      if (p5.Vector.dist(this.parts[0], food.pos) < SNAKE_PART_RADIUS + FOOD_RADIUS) {
+        this.missingParts += 1;
+
+        // Food::gotEaten handles setting Snake::target.
+        food.gotEaten();
+      }
+    }
+  }
+
+  move() {
+    // TODO: Figure out how to make snakes slower.
+    if (this.target !== null) {
+      this.angle = p5.Vector.sub(this.target.pos, this.parts[0]).heading();
+
+      let v = p5.Vector.fromAngle(this.angle);
+      v.setMag(SNAKE_PART_RADIUS * 2);
+      if (this.missingParts === 0) {
+        this.parts.pop();
+      } else {
+        this.missingParts -= 1;
+      }
+      this.parts.unshift(p5.Vector.add(this.parts[0], v));
+    }
+  }
+
+  isColliding() {
+    const head = this.parts[0];
+
+    for (let i = 2, l = this.parts.length; i < l; ++i) {
+      if (head.dist(this.parts[i]) < SNAKE_PART_RADIUS * 2) {
+        return true;
+      }
+    }
+
+    // TODO: Check collision with other sneks?
+
+    return false;
   }
 
   update() {
-    this.angle = p5.Vector.sub(foods[0].pos, this.parts[0]).heading();
-
-    // TODO: Figure out how to make snakes slower.
-    let v = p5.Vector.fromAngle(this.angle);
-    v.setMag(SNAKE_PART_RADIUS);
-    if (this.missingParts === 0) {
-      this.parts.pop();
-    } else {
-      this.missingParts -= 1;
+    if (this.target === null) {
+      this.seekNewTarget();
     }
-    this.parts.unshift(p5.Vector.add(this.parts[0], v));
+
+    this.eatFood();
+
+    this.move();
   }
 
   draw() {
@@ -45,20 +123,18 @@ const FOOD_RADIUS = 10;
 class Food {
   constructor() {
     this.placeRandomly();
+    this.hunter = null;
   }
 
   placeRandomly() {
     this.pos = createVector(random(width), random(height));
   }
 
-  update() {
-    for (let snake of snakes) {
-      if (p5.Vector.dist(snake.parts[0], this.pos) < SNAKE_PART_RADIUS + FOOD_RADIUS) {
-        snake.partsMissing += 1;
-        this.placeRandomly();
-        break;
-      }
-    }
+  gotEaten() {
+    this.placeRandomly();
+    // Works when food is stolen.
+    if (this.hunter !== null && this.hunter.target === this) this.hunter.target = null;
+    this.hunter = null;
   }
 
   draw() {
@@ -71,20 +147,28 @@ let foods;
 
 function setup() {
   createCanvas(600, 400);
-  snakes = [new Snake()];
-  foods = [new Food()];
+  snakes = [];
+  foods = [];
+
+  for (let i = 0; i < 5; ++i) snakes.push(new Snake());
+  for (let i = 0; i < 10; ++i) foods.push(new Food());
 }
 
 function draw() {
   background(0);
 
   for (let food of foods) {
-    food.update();
     food.draw();
   }
 
-  for (let snake of snakes) {
+  for (let i = snakes.length - 1; i >= 0; --i) {
+    const snake = snakes[i];
+
     snake.update();
     snake.draw();
+
+    if (snake.isColliding()) {
+      snakes.splice(i, 1);
+    }
   }
 }
