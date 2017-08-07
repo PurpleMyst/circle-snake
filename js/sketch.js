@@ -4,18 +4,23 @@ let keys = {'A': false, 'D': false};
 let gameOver = false;
 
 const SNAKE_PART_RADIUS = 10;
+const INITIAL_SNAKE_PARTS = 10;
+
 class Snake {
   constructor() {
-    this.angle = 0;
+    this.angle = random(-PI / 2, PI / 2);
     this.missingParts = 0;
     this.parts = [];
 
-    const headX = random(width);
-    const headY = random(height);
-    for (let i = 0; i < 10; ++i) {
+    let headX, headY;
+    headX = random(width - SNAKE_PART_RADIUS);
+    headY = random(height - INITIAL_SNAKE_PARTS * SNAKE_PART_RADIUS * 2);
+
+    for (let i = 0; i < INITIAL_SNAKE_PARTS; ++i) {
        this.parts.push(createVector(headX, headY + SNAKE_PART_RADIUS * 2 * i));
     }
   }
+
   eatFood() {
     for (let food of foods) {
       if (p5.Vector.dist(this.parts[0], food.pos) < SNAKE_PART_RADIUS + FOOD_RADIUS) {
@@ -118,8 +123,11 @@ function draw() {
 
   fill(255);
   stroke(255);
-  textSize(20);
-  text("Score: " + snake.parts.length, 0, 20);
+
+  if (!gameOver) {
+    textSize(20);
+    text("Score: " + (snake.parts.length - INITIAL_SNAKE_PARTS), 0, 20);
+  }
 
   for (let food of foods) {
     food.draw();
@@ -130,6 +138,20 @@ function draw() {
 
   if (snake.isColliding()) {
     gameOver = true;
+  }
+
+  if (gameOver) {
+    push();
+    fill(200, 0, 0);
+    stroke(255);
+    strokeWeight(10);
+    textSize(170);
+    text(" YOU\nLOSE", 80, 170);
+
+    textSize(35);
+    strokeWeight(5);
+    text("Score: " + (snake.parts.length - INITIAL_SNAKE_PARTS), 0, 35);
+    pop();
   }
 }
 
